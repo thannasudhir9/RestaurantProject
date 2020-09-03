@@ -21,7 +21,7 @@ public class CustomerInfoValidator implements Validator{
 	}
 
 
-    public JSONObject getPerson(String firstName, String lastName) throws JSONException{
+   /* public JSONObject getPerson(String firstName, String lastName) throws JSONException{
         JSONObject person = new JSONObject();
             person.put("firstName", firstName);
             person.put("lastName", lastName);
@@ -44,7 +44,7 @@ public class CustomerInfoValidator implements Validator{
         response.put("employees", employees );
         response.put("manager", managers );
         return response;
-    }
+    }*/
 
 	public void validate(Object target, Errors errors) {
 		CustomerInfo custInfo = (CustomerInfo) target;

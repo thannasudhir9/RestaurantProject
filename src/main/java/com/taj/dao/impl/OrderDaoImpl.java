@@ -25,6 +25,8 @@ import java.util.*;
 public class OrderDaoImpl implements OrderDao {
 
 	private SessionFactory sessionFactory;
+	HashMap<String,Boolean> emailPremium = new HashMap<String,Boolean>();
+
 
 	public void writePremiumUsers(){
 		//First User
@@ -45,13 +47,13 @@ public class OrderDaoImpl implements OrderDao {
 		JSONObject userObject2 = new JSONObject();
 		userObject2.put("user", userDetails2);
 
-		//Add employees to list
+		//Add users to list
 		JSONArray userList = new JSONArray();
 		userList.add(userObject);
 		userList.add(userDetails2);
 
 		//Write JSON file
-		try (FileWriter file = new FileWriter("users.json")) {
+		try (FileWriter file = new FileWriter("C:\\Users\\thann\\IdeaProjects\\RestaurantProject\\users.json")) {
 
 			file.write(userList.toJSONString());
 			file.flush();
@@ -67,7 +69,7 @@ public class OrderDaoImpl implements OrderDao {
 			//JSON parser object to parse read file
 			JSONParser jsonParser = new JSONParser();
 
-			try (FileReader reader = new FileReader("users.json"))
+			try (FileReader reader = new FileReader("C:\\Users\\thann\\IdeaProjects\\RestaurantProject\\users.json"))
 			{
 				//Read JSON file
 				Object obj = jsonParser.parse(reader);
@@ -76,7 +78,7 @@ public class OrderDaoImpl implements OrderDao {
 				System.out.println(usersList);
 
 				//Iterate over users array
-				usersList.forEach( user -> parseEmployeeObject( (JSONObject) user , null) );
+				//usersList.forEach( user -> parseUserObject( (JSONObject) user , null) );
 
 				return usersList;
 
@@ -90,27 +92,29 @@ public class OrderDaoImpl implements OrderDao {
 		return null;
 	}
 
-	private static Boolean parseEmployeeObject(JSONObject employee,String email)
+	private Boolean parseUserObject(JSONObject users,String email)
 	{
-		//Get employee object within list
-		JSONObject userObject = (JSONObject) employee.get("user");
+		//Get users object within list
+		JSONObject userObject = (JSONObject) users.get("user");
 
-		//Get employee first name
+		//Get user first name
 		String firstName = (String) userObject.get("firstName");
 		System.out.println(firstName);
 
-		//Get employee last name
+		//Get user last name
 		String lastName = (String) userObject.get("lastName");
 		System.out.println(lastName);
 
-		//Get employee website name
+		//Get user email
 		String emailJSON = (String) userObject.get("email");
 		System.out.println(email);
 
 		if(email.equals(emailJSON)){
+			emailPremium.put(email,true);
 			return  true;
 		}
 		else{
+			emailPremium.put(email,false);
 			return  false;
 		}
 	}
@@ -123,10 +127,11 @@ public class OrderDaoImpl implements OrderDao {
 		User user = null;
 
 		//Data Driven Programming
-		writePremiumUsers();
+		//writePremiumUsers();
 		JSONArray jsonarrayObj = ReadJSON();
 		String email = cart.getCustomerInfo().getEmail();
-		Boolean premiumUser = checkEmailInPremiumUser(jsonarrayObj, email);
+		Boolean premiumUser = false;
+		premiumUser = checkEmailInPremiumUser(jsonarrayObj, email);
 
 		if (this.getUser(cart.getCustomerInfo().getEmail()) == null) {
 			user = new User();
@@ -181,11 +186,8 @@ public class OrderDaoImpl implements OrderDao {
 
 	private Boolean checkEmailInPremiumUser(JSONArray jsonarrayObj,String email) {
 		Boolean val = false;
-		//jsonarrayObj.forEach( userObj -> parseEmployeeObject( (JSONObject) userObj,email));
-		JSONArray jsonArray = (JSONArray) jsonarrayObj.get(1);
-		for (int i=0;i<jsonArray.size();i++){
-			 val = parseEmployeeObject( (JSONObject) jsonArray.get(i),email);
-		}
+		jsonarrayObj.forEach( userObj -> parseUserObject( (JSONObject) userObj,email));
+		val = emailPremium.get(email);
 		return val;
 	}
 
