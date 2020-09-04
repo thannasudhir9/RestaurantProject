@@ -25,15 +25,17 @@ import java.util.*;
 public class OrderDaoImpl implements OrderDao {
 
 	private SessionFactory sessionFactory;
-	HashMap<String,Boolean> emailPremium = new HashMap<String,Boolean>();
-
+	HashMap<String,String> emailPremium = new HashMap<String,String>();
 
 	public void writePremiumUsers(){
 		//First User
 		JSONObject userDetails = new JSONObject();
-		userDetails.put("firstName", "Lokesh");
-		userDetails.put("lastName", "Gupta");
+		userDetails.put("firstName", "Lakshmi");
+		userDetails.put("lastName", "Devi");
 		userDetails.put("email", "abc@gmail.com");
+		userDetails.put("premiumuser", "true");
+		userDetails.put("semipremiumuser", "false");
+		userDetails.put("nonpremiumuser", "false");
 
 		JSONObject userObject = new JSONObject();
 		userObject.put("user", userDetails);
@@ -43,14 +45,30 @@ public class OrderDaoImpl implements OrderDao {
 		userDetails2.put("firstName", "Brian");
 		userDetails2.put("lastName", "Schultz");
 		userDetails2.put("email", "def@gmail.com");
+		userDetails2.put("premiumuser", "false");
+		userDetails2.put("semipremiumuser", "true");
+		userDetails2.put("nonpremiumuser", "false");
 
 		JSONObject userObject2 = new JSONObject();
 		userObject2.put("user", userDetails2);
+
+		//Third User
+		JSONObject userDetails3 = new JSONObject();
+		userDetails3.put("firstName", "Range");
+		userDetails3.put("lastName", "Rover");
+		userDetails3.put("email", "stk@gmail.com");
+		userDetails3.put("premiumuser", "false");
+		userDetails3.put("semipremiumuser", "false");
+		userDetails3.put("nonpremiumuser", "true");
+
+		JSONObject userObject3 = new JSONObject();
+		userObject3.put("user", userDetails3);
 
 		//Add users to list
 		JSONArray userList = new JSONArray();
 		userList.add(userObject);
 		userList.add(userDetails2);
+		userList.add(userDetails3);
 
 		//Write JSON file
 		try (FileWriter file = new FileWriter("C:\\Users\\thann\\IdeaProjects\\RestaurantProject\\users.json")) {
@@ -94,29 +112,43 @@ public class OrderDaoImpl implements OrderDao {
 
 	private Boolean parseUserObject(JSONObject users,String email)
 	{
-		//Get users object within list
+		//Getting the users object within JSON Objects
 		JSONObject userObject = (JSONObject) users.get("user");
 
-		//Get user first name
 		String firstName = (String) userObject.get("firstName");
 		System.out.println(firstName);
 
-		//Get user last name
 		String lastName = (String) userObject.get("lastName");
 		System.out.println(lastName);
 
-		//Get user email
 		String emailJSON = (String) userObject.get("email");
 		System.out.println(email);
 
-		if(email.equals(emailJSON)){
-			emailPremium.put(email,true);
+		String premiumUser = (String) userObject.get("premiumuser");
+		System.out.println(premiumUser);
+
+		String semipremiumUser = (String) userObject.get("semipremiumuser");
+		System.out.println(semipremiumUser);
+
+		String nonpremiumUser = (String) userObject.get("nonpremiumuser");
+		System.out.println(nonpremiumUser);
+
+		if(email.equals(emailJSON) && premiumUser.equals("true")){
+			emailPremium.put(email,"premium");
 			return  true;
 		}
-		else{
-			emailPremium.put(email,false);
-			return  false;
+		else if(email.equals(emailJSON) && semipremiumUser.equals("true")){
+			emailPremium.put(email,"semipremium");
+			return  true;
 		}
+		else if(email.equals(emailJSON) && nonpremiumUser.equals("true")){
+			emailPremium.put(email,"nonpremium");
+			return  true;
+		}
+		else {
+			emailPremium.put(email, "nonpremium");
+		}
+		return true;
 	}
 
 	public void saveOrder(ShoppingCart cart) {
@@ -130,8 +162,8 @@ public class OrderDaoImpl implements OrderDao {
 		//writePremiumUsers();
 		JSONArray jsonarrayObj = ReadJSON();
 		String email = cart.getCustomerInfo().getEmail();
-		Boolean premiumUser = false;
-		premiumUser = checkEmailInPremiumUser(jsonarrayObj, email);
+		String premiumUserType = null;
+		premiumUserType = checkEmailInPremiumUser(jsonarrayObj, email);
 
 		if (this.getUser(cart.getCustomerInfo().getEmail()) == null) {
 			user = new User();
@@ -146,16 +178,22 @@ public class OrderDaoImpl implements OrderDao {
 		}
 
 		Order order = new Order(user);
-		if(premiumUser){
+		if(premiumUserType.equals("premium")){
 			user = this.getUser(cart.getCustomerInfo().getEmail());
 			order.setOrderId(this.getMaxOrderNum()+1);
 			double totalPrice = 0.0;
-			order.setPrice(totalPrice);
+			order.setPrice(totalPrice); // 100 percent discount users
 			order.setDate(new Timestamp(System.currentTimeMillis()));
 		}
-		else {
+		else if (premiumUserType.equals("semipremium")){
+			user = this.getUser(cart.getCustomerInfo().getEmail());
+			order.setOrderId(this.getMaxOrderNum()+1);
+			order.setPrice((cart.getTotalPrice())/2); // 50 percent discount users
+			order.setDate(new Timestamp(System.currentTimeMillis()));
+		}
+		else if (premiumUserType.equals("nonpremium")){
 			order.setOrderId(this.getMaxOrderNum() + 1);
-			order.setPrice(cart.getTotalPrice());
+			order.setPrice(cart.getTotalPrice()); //0 percent discount users
 			order.setDate(new Timestamp(System.currentTimeMillis()));
 		}
 		session.persist(order);
@@ -184,10 +222,9 @@ public class OrderDaoImpl implements OrderDao {
 		
 	}
 
-	private Boolean checkEmailInPremiumUser(JSONArray jsonarrayObj,String email) {
-		Boolean val = false;
+	private String checkEmailInPremiumUser(JSONArray jsonarrayObj,String email) {
 		jsonarrayObj.forEach( userObj -> parseUserObject( (JSONObject) userObj,email));
-		val = emailPremium.get(email);
+		String val = emailPremium.get(email);
 		return val;
 	}
 
