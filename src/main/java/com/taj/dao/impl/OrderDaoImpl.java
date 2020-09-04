@@ -223,6 +223,7 @@ public class OrderDaoImpl implements OrderDao {
 	}
 
 	private String checkEmailInPremiumUser(JSONArray jsonarrayObj,String email) {
+		//Lambda Function - Functional Programming
 		jsonarrayObj.forEach( userObj -> parseUserObject( (JSONObject) userObj,email));
 		String val = emailPremium.get(email);
 		return val;
